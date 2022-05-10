@@ -12,6 +12,16 @@ import torch
 from timm.data import Mixup
 from timm.utils import accuracy, ModelEma
 
+/* 
+This part is from https://christianbernecker.medium.com/how-to-create-a-confusion-matrix-in-pytorch-38d06a7f04b7
+*/
+from sklearn.metrics import confusion_matrix
+import seaborn as sn
+import pandas as pd
+
+y_pred = []
+y_true = []
+
 import utils
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
@@ -158,7 +168,16 @@ def evaluate(data_loader, model, device, use_amp=False):
         else:
             output = model(images)
             loss = criterion(output, target)
-
+            
+#         print(output)
+#         print(target)
+#         break
+        output_classes = (torch.max(torch.exp(output), 1)[1]).data.cpu().numpy()
+        y_pred.extend(output) # Save Prediction
+    
+        labels = target.data.cpu().numpy()
+        y_true.extend(labels) # Save Truth
+  
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
 
         batch_size = images.shape[0]
