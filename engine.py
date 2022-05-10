@@ -19,8 +19,7 @@ from sklearn.metrics import confusion_matrix
 import seaborn as sn
 import pandas as pd
 
-y_pred = []
-y_true = []
+
 
 import utils
 
@@ -146,6 +145,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
 @torch.no_grad()
 def evaluate(data_loader, model, device, use_amp=False):
+  
+    y_pred = []
+    y_true = []
     criterion = torch.nn.CrossEntropyLoss()
 
     metric_logger = utils.MetricLogger(delimiter="  ")
@@ -184,9 +186,18 @@ def evaluate(data_loader, model, device, use_amp=False):
         metric_logger.update(loss=loss.item())
         metric_logger.meters['acc1'].update(acc1.item(), n=batch_size)
         metric_logger.meters['acc5'].update(acc5.item(), n=batch_size)
+        
+    #confusion matrix
+    cf_matrix = confusion_matrix(y_true, y_pred)
+    metric_logger.meters['acc5'] 
+    
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
     print('* Acc@1 {top1.global_avg:.3f} Acc@5 {top5.global_avg:.3f} loss {losses.global_avg:.3f}'
           .format(top1=metric_logger.acc1, top5=metric_logger.acc5, losses=metric_logger.loss))
 
-    return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
+    metrics = {k: meter.global_avg for k, meter in metric_logger.meters.items()}
+    metrics['confusion_matrix'] = cf_matrix
+    
+    print(metrics['confusion_matrix'])
+    return metrics
