@@ -1,0 +1,20 @@
+ python main.py --epochs 5 \
+ --model convnext_non_local \
+ --data_set image_folder \
+ --data_path PATH/train2 \
+ --eval_data_path  PATH/val2 \
+ --batch_size 16 \
+ --nb_classes 4 \
+ --num_workers 8 \
+ --warmup_epochs 0 \
+ --save_ckpt true \
+ --output_dir PATH/outputs \
+ --finetune convnext_tiny_1k_224_ema.pth \
+ --device cpu \
+ --cutmix 0 \
+ --mixup 0 \
+ --lr 4e-4 \
+ --enable_wandb false \
+ --wandb_ckpt false \
+ --auto_resume false \
+| tee output.txt

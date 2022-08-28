@@ -12,6 +12,8 @@ import torch.nn.functional as F
 from timm.models.layers import trunc_normal_, DropPath
 from timm.models.registry import register_model
 
+from .non_local import NLBlockND
+
 class Block(nn.Module):
     r""" ConvNeXt Block. There are two equivalent implementations:
     (1) DwConv -> LayerNorm (channels_first) -> 1x1 Conv -> GELU -> 1x1 Conv; all in (N, C, H, W)
@@ -116,20 +118,13 @@ class ConvNeXt(nn.Module):
         x = self.head(x)
         return x
 
-class ConvNeXt_Zheng(nn.Module):
-    r""" ConvNeXt
-        A PyTorch impl of : `A ConvNet for the 2020s`  -
-          https://arxiv.org/pdf/2201.03545.pdf
-    Args:
-        in_chans (int): Number of input image channels. Default: 3
-        num_classes (int): Number of classes for classification head. Default: 4
-        depths (tuple(int)): Number of blocks at each stage. Default: [3, 3, 9, 3]
-        dims (int): Feature dimension at each stage. Default: [96, 192, 384, 768]
-        drop_path_rate (float): Stochastic depth rate. Default: 0.
-        layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
-        head_init_scale (float): Init scaling value for classifier weights and biases. Default: 1.
+
+class ConvNeXt_Non_Local(nn.Module):
+    """ 
+    ConvNeXt with Non-local Layer(s)
+    The 
     """
-    def __init__(self, in_chans=3, num_classes=5, 
+    def __init__(self, in_chans=3, num_classes=1000, 
                  depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], drop_path_rate=0., 
                  layer_scale_init_value=1e-6, head_init_scale=1.,
                  ):
@@ -152,15 +147,27 @@ class ConvNeXt_Zheng(nn.Module):
         dp_rates=[x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))] 
         cur = 0
         for i in range(4):
-            stage = nn.Sequential(
-                *[Block(dim=dims[i], drop_path=dp_rates[cur + j], 
-                layer_scale_init_value=layer_scale_init_value) for j in range(depths[i])]
-            )
+
+            # Added a single Non-Local Block after the second residual layer, change if needed. 
+            if i == 1:
+                layers = [
+                    Block(dim=dims[i], drop_path=dp_rates[cur + j], layer_scale_init_value=layer_scale_init_value) \
+                    for j in range(depths[i])
+                ]
+
+                layers.append(NLBlockND(in_channels=dims[i], dimension=2))
+                stage =  nn.Sequential(*layers)
+                          
+            else:
+                stage = nn.Sequential(
+                    *[Block(dim=dims[i], drop_path=dp_rates[cur + j], 
+                    layer_scale_init_value=layer_scale_init_value) for j in range(depths[i])]
+                )
             self.stages.append(stage)
             cur += depths[i]
 
         self.norm = nn.LayerNorm(dims[-1], eps=1e-6) # final norm layer
-        self.head = nn.Linear(dims[-1], 4)
+        self.head = nn.Linear(dims[-1], num_classes)
 
         self.apply(self._init_weights)
         self.head.weight.data.mul_(head_init_scale)
@@ -208,6 +215,19 @@ class LayerNorm(nn.Module):
             x = self.weight[:, None, None] * x + self.bias[:, None, None]
             return x
 
+
+@register_model
+def convnext_non_local(pretrained=False, in_22k=False, **kwargs):
+    model = ConvNeXt_Non_Local(depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], **kwargs)
+
+    # Change local path 
+    model_dict =torch.load('PATH/checkpoint-best.pth', map_location="cpu")['model']
+    
+    model.load_state_dict(
+        state_dict = model_dict,
+        strict=False
+    )
+    return model
 
 model_urls = {
     "convnext_tiny_1k": "https://dl.fbaipublicfiles.com/convnext/convnext_tiny_1k_224_ema.pth",
@@ -267,8 +287,3 @@ def convnext_xlarge(pretrained=False, in_22k=False, **kwargs):
         model.load_state_dict(checkpoint["model"])
     return model
 
-@register_model
-def my_model(pretrained=False, in_22k=False, **kwargs):
-    model = ConvNeXt_Zheng(depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], **kwargs)
-    model.load_state_dict(torch.load('C:/Users/qiezh/Desktop/FYP/FYPConvNext/ConvNextResults/Results50epoch/checkpoint-best.pth' ,map_location="cpu")['model'])
-    return model
