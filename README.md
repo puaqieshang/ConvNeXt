@@ -8,6 +8,7 @@ The base model, ConvNext, is based on the the following paper:
 [[`arXiv`](https://arxiv.org/abs/2201.03545)][[`video`](https://www.youtube.com/watch?v=QzCjXqFnWPE)]
 
 On the other hand, Non-Local Neural Networks are based on the following paper:
+
 [Non-local Neural Networks](https://arxiv.org/abs/1711.07971)
 [[`arXiv`](https://arxiv.org/abs/1711.07971)]
 
@@ -21,7 +22,7 @@ class="center">
 </p>
 
 ## Acknowledgement
-This repository is built using the [timm](https://github.com/rwightman/pytorch-image-models) library, [DeiT](https://github.com/facebookresearch/deit) [tea1528](https://github.com/tea1528/Non-Local-NN-Pytorch) repository and [BEiT](https://github.com/microsoft/unilm/tree/master/beit) repositories.
+This repository is built using the [timm](https://github.com/rwightman/pytorch-image-models) library, [DeiT](https://github.com/facebookresearch/deit), [tea1528](https://github.com/tea1528/Non-Local-NN-Pytorch) repository and [BEiT](https://github.com/microsoft/unilm/tree/master/beit) repositories.
 
 ## License
 This project is released under the MIT license. Please see the [LICENSE](LICENSE) file for more information.
